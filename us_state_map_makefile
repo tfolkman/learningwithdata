@@ -1,0 +1,25 @@
+build/gz_2010_us_040_00_20m.zip:
+	mkdir -p $(dir $@)
+	curl -o $@ http://www2.census.gov/geo/tiger/GENZ2010/$(notdir $@)
+
+build/gz_2010_us_040_00_20m.shp: build/gz_2010_us_040_00_20m.zip
+	unzip -od $(dir $@) $<
+	touch $@
+
+build/states.json: build/gz_2010_us_040_00_20m.shp state_data.csv
+	node_modules/.bin/topojson \
+		-o $@ \
+		--id-property='STATE,id' \
+		--external-properties=state_data.csv \
+		--properties='name=state' \
+		--properties='rate=+d.properties["value"]' \
+		--properties='rank=+d.properties["rank"]' \
+		--properties='cost=+d.properties["cost"]' \
+		--properties='number=+d.properties["n_schools"]' \
+		--projection='width = 960, height = 600, d3.geo.albersUsa() \
+			.scale(1280) \
+			.translate([width / 2, height / 2])' \
+		--simplify=.5 \
+		--filter=none \
+		-- states=$<
+
